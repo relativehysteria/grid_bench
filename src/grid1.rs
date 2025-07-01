@@ -1,26 +1,17 @@
 #![allow(dead_code)]
 
-use std::ops::{Index, IndexMut};
 use std::slice::{ChunksExact, ChunksExactMut};
 use std::fmt::Debug;
+use crate::GridImpl;
 
 #[derive(Debug)]
-pub struct Grid<T: Debug> {
+pub struct Grid<T: Debug + Default + Clone> {
     width: usize,
     height: usize,
     data: Vec<T>,
 }
 
-impl<T: Debug> Grid<T> {
-    /// Creates a new grid with default values (requires `T: Default`).
-    pub fn new(width: usize, height: usize) -> Self
-    where
-        T: Default + Clone,
-    {
-        let data = vec![T::default(); width * height];
-        Grid { width, height, data }
-    }
-
+impl<T: Debug + Default + Clone> Grid<T> {
     /// Creates a grid from raw data (panics if data length mismatches dimensions).
     pub fn from_data(width: usize, height: usize, data: Vec<T>) -> Self {
         assert_eq!(width * height, data.len(),
@@ -45,13 +36,6 @@ impl<T: Debug> Grid<T> {
     pub fn get(&self, x: usize, y: usize) -> Option<&T> {
         (x < self.width && y < self.height)
             .then(|| unsafe { self.get_unchecked(x, y) })
-    }
-
-    /// Mutably access element safely with bounds checks.
-    #[inline]
-    pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
-        (x < self.width && y < self.height)
-            .then(|| unsafe { self.get_unchecked_mut(x, y) })
     }
 
     /// Unchecked access (unsafe: caller must ensure `x < width` and `y <
@@ -114,18 +98,16 @@ impl<T: Debug> Grid<T> {
     }
 }
 
-// Indexing operators for convenient syntax: grid[(x, y)]
-impl<T: Debug> Index<(usize, usize)> for Grid<T> {
-    type Output = T;
+impl<T: Debug + Default + Clone> GridImpl<T> for Grid<T> {
     #[inline]
-    fn index(&self, (x, y): (usize, usize)) -> &T {
-        self.get(x, y).expect("Index out of bounds")
+    fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
+        (x < self.width && y < self.height)
+            .then(|| unsafe { self.get_unchecked_mut(x, y) })
     }
-}
 
-impl<T: Debug> IndexMut<(usize, usize)> for Grid<T> {
-    #[inline]
-    fn index_mut(&mut self, (x, y): (usize, usize)) -> &mut T {
-        self.get_mut(x, y).expect("Index out of bounds")
+    fn new(width: usize, height: usize) -> Self {
+        let data = vec![T::default(); width * height];
+        Grid { width, height, data }
     }
+
 }

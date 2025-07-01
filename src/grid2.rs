@@ -2,24 +2,14 @@
 
 use std::slice::{Iter, IterMut};
 use std::fmt::Debug;
+use crate::GridImpl;
 
 #[derive(Debug)]
-pub struct Grid<T: Debug> {
+pub struct Grid<T: Debug + Default + Clone> {
     pub data: Vec<Vec<T>>,
 }
 
-impl<T: Debug> Grid<T> {
-    /// Creates a new grid with default values (requires `T: Default`).
-    pub fn new(width: usize, height: usize) -> Self
-    where
-        T: Default + Clone,
-    {
-        let data = (0..height)
-            .map(|_| vec![T::default(); width])
-            .collect::<Vec<Vec<T>>>();
-        Grid { data }
-    }
-
+impl<T: Debug + Default + Clone> Grid<T> {
     /// Creates a grid from raw data (panics if data length mismatches
     /// dimensions).
     pub fn from_data(data: Vec<Vec<T>>) -> Self {
@@ -42,12 +32,6 @@ impl<T: Debug> Grid<T> {
     #[inline]
     pub fn get(&self, x: usize, y: usize) -> Option<&T> {
         self.data.get(y).map(|row| row.get(x)).flatten()
-    }
-
-    /// Mutably access element safely with bounds checks.
-    #[inline]
-    pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
-        self.data.get_mut(y).map(|row| row.get_mut(x)).flatten()
     }
 
     /// Unchecked access (unsafe: caller must ensure `x < width` and `y <
@@ -92,4 +76,20 @@ impl<T: Debug> Grid<T> {
     pub fn rows_mut(&mut self) -> IterMut<'_, Vec<T>> {
         self.data.iter_mut()
     }
+}
+
+
+impl<T: Debug + Default + Clone> GridImpl<T> for Grid<T> {
+    #[inline]
+    fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
+        self.data.get_mut(y).map(|row| row.get_mut(x)).flatten()
+    }
+
+    fn new(width: usize, height: usize) -> Self {
+        let data = (0..height)
+            .map(|_| vec![T::default(); width])
+            .collect::<Vec<Vec<T>>>();
+        Grid { data }
+    }
+
 }
